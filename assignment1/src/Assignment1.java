@@ -5,10 +5,10 @@ import java.io.FileOutputStream;
 
 public class Assignment1 
 {
-    public static void main(String[] args) throws Exception
+    public static void main(String[] args)
     {
         boolean encrypt = false,decrypt = false , brk = false;
-        String inputfile="",outputfile="",keyfile="";
+        String inputfile="", outputfile="", keyfile="", messagefile="" , cipherfile="" ;
 
         for (int i=0 ; i<args.length ; i++)
         {
@@ -24,15 +24,24 @@ public class Assignment1
                 inputfile = args[i+1];
             if (args[i].equals("-o")) 
                 outputfile = args[i+1];
-            
+            if (args[i].equals("-m"))
+                messagefile = args[i+1];
+            if (args[i].equals("-c"))
+                cipherfile = args[i+1];
         }
-
-        if (encrypt)
-            encrypt(keyfile, inputfile, outputfile);
-        if (decrypt)
-            decrypt(keyfile, inputfile, outputfile);
-        if (brk)
-            breakc(keyfile, inputfile , outputfile);
+        try
+        {
+            if (encrypt)
+                encrypt(keyfile, inputfile, outputfile);
+            if (decrypt)
+                decrypt(keyfile, inputfile, outputfile);
+            if (brk)
+                breakc(messagefile, cipherfile, outputfile);
+        }
+        catch (Exception e)
+        {
+            System.out.println(e.getMessage());
+        }
         
     }
     
@@ -57,11 +66,6 @@ public class Assignment1
     {
         byte[][] C1 = AES1_DEC(C,K2);
         return AES1_DEC(C1,K1);
-    }
-
-    public static void breakc(String keyfile, String inputfile, String outputfile)
-    {
-
     }
 
     public static byte[][] XOR(byte[][] M,byte[][] K)
@@ -147,6 +151,33 @@ public class Assignment1
             out.write(M,0,16);
         }
         in.close();
+        out.close();
+    }
+
+    public static void breakc(String messagefile, String cipherfile, String outputfile) throws Exception
+    {
+        InputStream txt = new FileInputStream(messagefile);
+        InputStream cipher = new FileInputStream(cipherfile);
+        OutputStream out = new FileOutputStream(outputfile);
+        byte[] text_block = new byte[16];
+        byte[] cipher_block = new byte[16];
+        byte[][] K2 = new byte[4][4];
+        byte[][] K1= { 
+            {(byte)0xa0 ,(byte) 0x88 , (byte)0x23 , (byte)0x2a},
+            {(byte)0xfa ,(byte) 0x54 ,(byte)0xa3 ,(byte)0x6c},
+            {(byte)0xfe , (byte)0x2c ,(byte)0x39 , (byte)0x76},
+            {(byte)0x17 , (byte)0xb1 ,(byte)0x39 , (byte)0x05}
+        };  //random Key matrix
+
+        txt.read(text_block,0,16);
+        txt.close();
+        cipher.read(cipher_block,0,16);
+        cipher.close();
+        byte[][] txt_matrix = reshape(text_block);
+        byte[][] cypher_matrix = reshape(cipher_block);
+        K2 = XOR(XOR(SwapIndexes(K1),txt_matrix),cypher_matrix);
+        out.write(flatten(K1),0,16);
+        out.write(flatten(K2),0,16);
         out.close();
     }
 
